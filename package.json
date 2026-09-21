@@ -1,0 +1,37 @@
+{
+  "name": "data-transformers-registry",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.28.2",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @dtr/shared build && concurrently -k \"pnpm --filter @dtr/backend dev\" \"pnpm --filter @dtr/frontend dev\"",
+    "build": "pnpm --filter @dtr/shared build && pnpm --filter @dtr/backend build && pnpm --filter @dtr/frontend build",
+    "lint": "pnpm --filter @dtr/shared build && eslint . && pnpm -r typecheck",
+    "test": "pnpm --filter @dtr/shared build && vitest run",
+    "test:e2e": "playwright test",
+    "test:docker": "tsx apps/backend/src/scripts/docker-smoke.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "hash-password": "tsx apps/backend/src/scripts/hash-password.ts",
+    "start": "node --env-file=.env apps/backend/dist/server.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/node": "^24.10.4",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "jsdom": "^26.1.0",
+    "prettier": "3.8.1",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.50.1",
+    "vitest": "^3.2.4"
+  }
+}

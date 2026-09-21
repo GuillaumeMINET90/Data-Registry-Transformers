@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+runtime/
+data/
+test-results/
+playwright-report/
+coverage/
+*.log
+.pnpm-store/
+docker-compose.local.yml

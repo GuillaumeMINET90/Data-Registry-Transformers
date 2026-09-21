@@ -1,0 +1,42 @@
+services:
+  data-transformers-registry:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      # Modifiables ici ou via les variables du shell / de votre outil de déploiement.
+      # Le fichier .env est facultatif.
+      DTR_ADMIN_USERNAME: '${DTR_ADMIN_USERNAME:-admin}'
+      # Vous pouvez remplacer cette valeur par votre mot de passe (16 caractères minimum).
+      # Si vous le collez ici, écrivez chaque $ en $$ pour Docker Compose.
+      DTR_ADMIN_PASSWORD: '${DTR_ADMIN_PASSWORD:-}'
+      # Alternative : un hash Argon2id. Ne renseignez pas les deux méthodes.
+      DTR_ADMIN_PASSWORD_HASH: '${DTR_ADMIN_PASSWORD_HASH:-}'
+      DTR_SESSION_SECRET: '${DTR_SESSION_SECRET:-}'
+      DTR_SESSION_TTL_SECONDS: '${DTR_SESSION_TTL_SECONDS:-28800}'
+      DTR_COOKIE_SECURE: '${DTR_COOKIE_SECURE:-false}'
+      DTR_LOG_LEVEL: '${DTR_LOG_LEVEL:-info}'
+      NODE_ENV: production
+      DTR_DATA_ROOT: /data/registry
+      DTR_ALLOWED_DATA_PARENT: /data
+      DTR_RUNTIME_DIR: /app/runtime
+      DTR_PUBLIC_DIR: /app/public
+      DTR_PORT: '8080'
+    ports:
+      - '${DTR_BIND_ADDRESS:-127.0.0.1}:${DTR_HTTP_PORT:-8080}:8080'
+    volumes:
+      - registry-data:/data
+      - registry-runtime:/app/runtime
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+volumes:
+  registry-data:
+  registry-runtime:

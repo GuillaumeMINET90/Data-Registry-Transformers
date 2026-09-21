@@ -1,0 +1,29 @@
+{
+  "name": "@dtr/frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dtr/shared": "workspace:*",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.11.0",
+    "@tanstack/react-query": "^5.90.16",
+    "react-hook-form": "^7.71.1",
+    "@hookform/resolvers": "^3.10.0",
+    "zod": "^3.25.76",
+    "yaml": "^2.8.2",
+    "lucide-react": "^0.562.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3"
+  }
+}

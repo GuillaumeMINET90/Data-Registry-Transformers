@@ -1,0 +1,37 @@
+version: 1
+
+id: hse_intervenants_exterieurs
+name: Travail avec des intervenants extérieurs
+service: hse
+family: point_minute_securite
+format: pdf
+
+description: >
+  Fiche HSE expliquant les règles à respecter avant et pendant
+  l'intervention d'une entreprise extérieure sur le site.
+
+recognition:
+  filenames:
+    - "point_minute_securite"
+    - "Intervenants extérieurs"
+
+  keywords:
+    - entreprise extérieure
+    - plan de prévention
+    - permis de feu
+    - travaux par points chauds
+    - service HSE
+
+transformation:
+  type: text
+  split_by: section
+
+  sections:
+    - avant intervention
+    - plan de prévention
+    - pendant intervention
+
+context: >
+  Cette fiche concerne le travail avec des entreprises extérieures.
+  Elle traite de l'accès au site, du plan de prévention, des risques
+  et des consignes applicables avant et pendant l'intervention.

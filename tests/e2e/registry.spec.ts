@@ -1,0 +1,42 @@
+import { test, expect } from '@playwright/test';
+test('parcours administrateur complet', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Utilisateur').fill('admin');
+  await page.getByLabel('Mot de passe').fill('e2e-test-password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Référentiel documentaire' })).toBeVisible();
+  await page.getByRole('link', { name: 'Nouveau Registry' }).first().click();
+  await page.getByLabel('Nom', { exact: true }).fill('Contrat de test');
+  await page.getByLabel('Identifiant', { exact: true }).fill('contrat_test');
+  await page.getByLabel('Service', { exact: true }).fill('Tests');
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(page).toHaveURL(/contrat_test\/edit/);
+  await page.getByLabel('Nom', { exact: true }).fill('Contrat modifié');
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Contrat modifié' })).toBeVisible();
+  await page.getByRole('tab', { name: /Aperçu YAML/ }).click();
+  await expect(page.locator('.yaml-preview')).toContainText('contrat_test');
+  await page.getByRole('link', { name: 'Registries', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Cloner Contrat modifié' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cloner', exact: true }).click();
+  await expect(page).toHaveURL(/contrat_test_copie\/edit/);
+  await page.getByRole('link', { name: 'Registries', exact: true }).last().click();
+  await page.getByRole('button', { name: /Supprimer Contrat modifié — copie/ }).click();
+  await page.getByLabel('Je confirme la suppression de ce Registry.').check();
+  await page.getByRole('button', { name: 'Supprimer définitivement' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.screenshot({ path: 'test-results/registry-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole('heading', { name: 'Référentiel documentaire' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: 'test-results/registry-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('link', { name: 'Configuration', exact: true }).first().click();
+  await page.getByLabel('Nom de l’application').fill('Référentiel de test');
+  await page.getByRole('button', { name: 'Terminer la configuration' }).click();
+  await expect(page.getByRole('button', { name: 'Terminer la configuration' })).not.toBeVisible();
+  await page.getByRole('button', { name: 'Déconnexion' }).click();
+  await expect(page).toHaveURL(/login/);
+});
