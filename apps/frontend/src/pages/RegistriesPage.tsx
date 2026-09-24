@@ -93,7 +93,7 @@ export function RegistriesPage() {
         <div>
           <span>
             <i className="dot green" />
-            {t('Actifs')}
+            {t('Actif')}
           </span>
           <strong>{data?.stats.active ?? '—'}</strong>
           <small>Prêts pour la transformation</small>

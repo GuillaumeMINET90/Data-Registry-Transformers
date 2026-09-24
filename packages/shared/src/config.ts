@@ -35,6 +35,16 @@ export const configSchema = z
       })
       .strict()
       .default({}),
+    options: z
+      .object({
+        services: z
+          .array(z.string().trim().min(1).max(100))
+          .max(200)
+          .refine((values) => new Set(values).size === values.length, 'Services en double')
+          .default(['general']),
+      })
+      .strict()
+      .default({}),
     setup_completed: z.boolean().default(false),
   })
   .strict();

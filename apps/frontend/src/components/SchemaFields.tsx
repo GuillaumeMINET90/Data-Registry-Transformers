@@ -5,6 +5,7 @@ import { useT } from '../i18n/index';
 import { normalizeId } from '@dtr/shared';
 const labels: Record<string, string> = {
   service: 'Service',
+  services: 'Services',
   format: 'Format',
   filenames: 'Noms de fichiers',
   split_by: 'Découpage',
@@ -307,8 +308,11 @@ function ArrayField({
   disabled: boolean;
 }) {
   const t = useT();
-  const { control, unregister } = useFormContext();
+  const { control, unregister, getValues } = useFormContext();
   const { field, fieldState } = useController({ control, name: path });
+  // Le contrôleur du tableau ne voit pas les saisies faites dans ses éléments :
+  // on relit la valeur courante du formulaire avant toute modification structurelle.
+  const current = () => (getValues(path) ?? []) as unknown[];
   const values = (field.value ?? []) as unknown[];
   const item = unwrap(schema.element);
   if (item instanceof z.ZodEnum)
@@ -336,7 +340,7 @@ function ArrayField({
       </fieldset>
     );
   const remove = (index: number) => {
-    const next = values.filter((_, i) => i !== index);
+    const next = current().filter((_, i) => i !== index);
     unregister(path);
     field.onChange(next);
   };
@@ -367,7 +371,7 @@ function ArrayField({
         <button
           type="button"
           className="button subtle small"
-          onClick={() => field.onChange([...values, blank(schema.element)])}
+          onClick={() => field.onChange([...current(), blank(schema.element)])}
         >
           <Plus size={15} />
           {t('Ajouter')} · {label}

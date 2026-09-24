@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { FormProvider, useController, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   newSimpleRegistry,
+  normalizeId,
   simpleRegistrySchema,
   toSimpleRegistry,
   stringifyYaml,
@@ -14,6 +15,7 @@ import { ArrowLeft, Save, Pencil, Copy, Trash2 } from 'lucide-react';
 import { ApiError, api } from '../api/client';
 import { ErrorMessage, Loading } from '../components/Feedback';
 import { SchemaFields } from '../components/SchemaFields';
+import { useConfiguration } from '../features/configuration/queries';
 import { YamlPreview } from '../features/registries/YamlPreview';
 import { RegistryActions } from '../features/registries/RegistryActions';
 import { usePreview, type PreparedPreview } from '../features/registries/usePreview';
@@ -26,7 +28,7 @@ const sections = [
     title: 'Document',
     keys: [
       'version',
-      'id',
+      'status',
       'name',
       'service',
       'family',
@@ -98,18 +100,17 @@ function Editor({ initial, readOnly }: { initial?: RegistryRecord; readOnly: boo
       setErrors([]);
       client.setQueryData(['registry', record.document.registry.id], record);
       await client.invalidateQueries({ queryKey: ['registries'] });
-      if (!initial) navigate(`/registries/${record.document.registry.id}/edit`, { replace: true });
+      navigate('/registries');
     },
     onError: (error) => {
-      if (error instanceof ApiError)
-        setErrors(
-          error.body.issues?.map((issue) => ({
-            path: issue.path.join('.'),
-            message: issue.message,
-          })) ?? [],
-        );
+      if (error instanceof ApiError) setErrors(error.body.issues?.map(toFormError) ?? []);
     },
   });
+  // L'identifiant n'est pas saisi : il est dérivé du nom tant que le Registry n'existe pas.
+  const name = values.name;
+  useEffect(() => {
+    if (!saved && !readOnly) form.setValue('id', normalizeId(name ?? ''));
+  }, [name, saved, readOnly, form]);
   useEffect(() => {
     const handler = (event: BeforeUnloadEvent) => {
       if (form.formState.isDirty) {
@@ -178,13 +179,7 @@ function Editor({ initial, readOnly }: { initial?: RegistryRecord; readOnly: boo
             (data) => mutation.mutate(data),
             () => {
               const parsed = simpleRegistrySchema.safeParse(form.getValues());
-              if (!parsed.success)
-                setErrors(
-                  parsed.error.issues.map((issue) => ({
-                    path: issue.path.join('.'),
-                    message: issue.message,
-                  })),
-                );
+              if (!parsed.success) setErrors(parsed.error.issues.map(toFormError));
             },
           )}
         >
@@ -291,7 +286,9 @@ function Editor({ initial, readOnly }: { initial?: RegistryRecord; readOnly: boo
             ) : (
               <div className="section-fields fields-grid">
                 {section.keys.map((key) =>
-                  key === 'recognition' || key === 'transformation' ? (
+                  key === 'service' ? (
+                    <ServiceField key={key} disabled={readOnly} isNew={!saved} />
+                  ) : key === 'recognition' || key === 'transformation' ? (
                     <fieldset className="field-group" key={key}>
                       <legend>
                         {t(key === 'recognition' ? 'Reconnaissance' : 'Transformation')}
@@ -307,7 +304,7 @@ function Editor({ initial, readOnly }: { initial?: RegistryRecord; readOnly: boo
                       key={key}
                       schema={simpleRegistrySchema.shape[key]}
                       path={key}
-                      disabled={readOnly || (key === 'id' && !!saved)}
+                      disabled={readOnly}
                     />
                   ),
                 )}
@@ -332,6 +329,51 @@ function Editor({ initial, readOnly }: { initial?: RegistryRecord; readOnly: boo
       {action && saved && (
         <RegistryActions record={saved} action={action} close={() => setAction(undefined)} />
       )}
+    </div>
+  );
+}
+/** L'identifiant est calculé à partir du nom : ses erreurs sont rattachées au champ Nom. */
+function toFormError(issue: { path: (string | number)[]; message: string }) {
+  const path = issue.path.join('.');
+  if (path === 'id' || path === 'registry.id')
+    return { path: 'name', message: 'Le nom doit commencer par une lettre.' };
+  return { path, message: issue.message };
+}
+function ServiceField({ disabled, isNew }: { disabled: boolean; isNew: boolean }) {
+  const t = useT();
+  const config = useConfiguration();
+  const { field, fieldState } = useController<SimpleRegistry, 'service'>({ name: 'service' });
+  const services = config.data?.config.options.services ?? [];
+  const { onChange, value } = field;
+  // Un nouveau Registry démarre sur le premier service configuré.
+  useEffect(() => {
+    if (isNew && services.length && !services.includes(value)) onChange(services[0]);
+  }, [isNew, services, value, onChange]);
+  // Un Registry existant peut référencer un service retiré depuis de la configuration.
+  const choices = value && !services.includes(value) ? [value, ...services] : services;
+  return (
+    <div className="form-field">
+      <label htmlFor="field-service">{t('Service')}</label>
+      <select
+        id="field-service"
+        {...field}
+        value={value ?? ''}
+        disabled={disabled}
+        aria-invalid={!!fieldState.error}
+      >
+        {!choices.length && <option value="">{config.isPending ? 'Chargement…' : '—'}</option>}
+        {choices.map((service) => (
+          <option key={service} value={service}>
+            {service}
+          </option>
+        ))}
+      </select>
+      {!config.isPending && !services.length && (
+        <small className="muted">
+          Aucun service défini : ajoutez-en dans Configuration › Options.
+        </small>
+      )}
+      {fieldState.error && <small className="field-error">{fieldState.error.message}</small>}
     </div>
   );
 }

@@ -33,9 +33,12 @@ export const simpleTransformation = z
     sections: list,
   })
   .strict();
+/** Statuts du contrat simplifié, identiques aux statuts internes du Registry. */
+export const simpleStatuses = ['draft', 'active', 'deprecated'] as const;
 export const simpleRegistrySchema = z
   .object({
     version: z.literal(1).default(1),
+    status: z.enum(simpleStatuses).default('active'),
     id: identifier,
     name: z.string().trim().min(1).max(200),
     service: z.string().trim().min(1).max(100),
@@ -386,6 +389,7 @@ export function fromSimpleRegistry(value: SimpleRegistry): Registry {
     registry: {
       id: doc.id,
       name: doc.name,
+      status: doc.status,
       department: doc.service,
       family: doc.family,
       description: doc.description,
@@ -401,6 +405,7 @@ export function fromSimpleRegistry(value: SimpleRegistry): Registry {
 export function toSimpleRegistry(doc: Registry): SimpleRegistry {
   return simpleRegistrySchema.parse({
     version: 1,
+    status: doc.registry.status,
     id: doc.registry.id,
     name: doc.registry.name,
     service: doc.registry.department,

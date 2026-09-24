@@ -16,6 +16,7 @@ const configurationSections = [
   'Général',
   'Stockage',
   'Registries',
+  'Options',
   'Interface',
   'Sécurité',
 ] as const;
@@ -39,7 +40,7 @@ function ConfigurationForm({ data: initial }: { data: ConfigResponse }) {
   const save = form.handleSubmit(
     (values) => mutation.mutate(values),
     (errors) => {
-      setSection(errors.registry ? '2' : errors.interface ? '3' : '0');
+      setSection(errors.registry ? '2' : errors.options ? '3' : errors.interface ? '4' : '0');
     },
   );
   const mutation = useMutation({
@@ -165,11 +166,20 @@ function ConfigurationForm({ data: initial }: { data: ConfigResponse }) {
             )}
             {section === '3' && (
               <section className="settings-section">
+                <h2>{t('Options')}</h2>
+                <p className="muted">
+                  Valeurs proposées dans les listes de choix lors de la création d’un Registry.
+                </p>
+                <SchemaFields schema={configSchema.shape.options} path="options" />
+              </section>
+            )}
+            {section === '4' && (
+              <section className="settings-section">
                 <h2>{t('Interface')}</h2>
                 <SchemaFields schema={configSchema.shape.interface} path="interface" />
               </section>
             )}
-            {section === '4' && (
+            {section === '5' && (
               <section className="settings-section">
                 <h2>{t('Sécurité')}</h2>
                 <p>Durée de session : {data.security.session_ttl_seconds / 3600} h</p>

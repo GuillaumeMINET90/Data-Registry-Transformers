@@ -13,7 +13,7 @@ const english: Record<string, string> = {
   'Référentiel documentaire': 'Document registry',
   'Décrivez vos documents. Structurez leur transformation.':
     'Describe your documents. Define their transformation.',
-  Actifs: 'Active',
+  Actif: 'Active',
   Brouillons: 'Drafts',
   Services: 'Departments',
   'Tous les Registries': 'All registries',

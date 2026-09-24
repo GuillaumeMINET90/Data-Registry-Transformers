@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import argon2 from 'argon2';
 import type { FastifyInstance } from 'fastify';
-import { newRegistry } from '@dtr/shared';
+import { newRegistry, simpleRegistrySchema } from '@dtr/shared';
 import type { ConfigResponse, RegistryRecord, RegistryList } from '@dtr/shared';
 import { buildApp } from './app.js';
 import { environmentSchema, type Environment } from './config/environment.js';
@@ -50,8 +50,10 @@ describe('API et persistance YAML', () => {
   const auth = () => ({ cookie, 'x-csrf-token': csrf });
   it('enregistre le contrat simplifié sans ajouter de blocs, puis le relit, modifie et clone', async () => {
     const example = decodeYaml(
-      await readFile('examples/hse-entreprises-extérieures.yml', 'utf8'),
+      await readFile('examples/synthese_indicateur_financier.yml', 'utf8'),
     ) as Record<string, unknown>;
+    // Le YAML écrit est le contrat normalisé : statut et valeurs par défaut explicites.
+    const expected = simpleRegistrySchema.parse(example);
     const preview = await app.inject({
       method: 'POST',
       url: '/api/registries/preview',
@@ -60,7 +62,7 @@ describe('API et persistance YAML', () => {
     });
     expect(preview.statusCode, preview.body).toBe(200);
     const prepared = preview.json<RegistryRecord & { token: string }>();
-    expect(decodeYaml(prepared.yaml)).toEqual(example);
+    expect(decodeYaml(prepared.yaml)).toEqual(expected);
     const response = await app.inject({
       method: 'POST',
       url: '/api/registries',
@@ -72,7 +74,7 @@ describe('API et persistance YAML', () => {
     expect(created.yaml).toBe(prepared.yaml);
     expect(
       decodeYaml(await readFile(join(env.DTR_DATA_ROOT, 'registry', created.path), 'utf8')),
-    ).toEqual(example);
+    ).toEqual(expected);
     const loaded = await app.inject({ url: `/api/registries/${example.id}`, headers: auth() });
     expect(loaded.statusCode).toBe(200);
     expect(loaded.json<RegistryRecord>().document).toEqual(created.document);
@@ -84,7 +86,7 @@ describe('API et persistance YAML', () => {
     });
     expect(updated.statusCode, updated.body).toBe(200);
     expect(decodeYaml(updated.json<RegistryRecord>().yaml)).toEqual({
-      ...example,
+      ...expected,
       context: 'Contexte modifié',
     });
     const clone = await app.inject({
@@ -95,7 +97,9 @@ describe('API et persistance YAML', () => {
     });
     expect(clone.statusCode, clone.body).toBe(201);
     expect(decodeYaml(clone.json<RegistryRecord>().yaml)).toEqual({
-      ...example,
+      ...expected,
+      status: 'draft',
+      service: 'hse',
       id: 'hse_copie',
       name: 'Copie',
       context: 'Contexte modifié',

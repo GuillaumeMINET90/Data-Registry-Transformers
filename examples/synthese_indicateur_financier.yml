@@ -1,0 +1,45 @@
+version: 1
+id: synthese_indicateur_financiers
+name: Synthèse des indicateurs financiers
+service: finance
+family: synthese_indicateurs
+format: xlsx
+description: >
+  Classeur de synthèse des indicateurs financiers et opérationnels
+  de l'entreprise. Les données sont organisées par année et par mois
+  et permettent notamment de suivre la production, sa répartition,
+  les charges et différents indicateurs de gestion.
+
+recognition:
+  filenames:
+    - synthese_indicateur_financier_*
+  keywords:
+    - Production hors taxes
+    - Production hors taxes N-1
+    - PVC
+    - Bois
+    - Alu
+    - Négoce
+    - Proportion PVC
+    - Proportion Bois
+    - Proportion Alu
+    - Incorporations
+    - Maintenance
+    - Transport
+
+transformation:
+
+  type: table
+  split_by: indicator
+
+context: >
+  Ce document présente l'évolution mensuelle et annuelle des principaux
+  indicateurs financiers et opérationnels de l'entreprise.
+
+  Chaque feuille correspond à une année. Les colonnes représentent
+  principalement les mois et les lignes représentent les différents
+  indicateurs suivis.
+
+  Certains indicateurs disposent d'une valeur N-1 permettant de comparer
+  une période avec l'année précédente. Les lignes "Ecart" représentent
+  les variations associées.

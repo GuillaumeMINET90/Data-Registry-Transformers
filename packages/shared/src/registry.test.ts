@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { newRegistry, normalizeId, registrySchema, validateRegistry } from './registry.js';
+import {
+  fromSimpleRegistry,
+  newRegistry,
+  newSimpleRegistry,
+  normalizeId,
+  registrySchema,
+  toSimpleRegistry,
+  validateRegistry,
+} from './registry.js';
 describe('contrat Registry v1', () => {
   it('normalise les identifiants', () => {
     expect(normalizeId('Équipements Maintenance')).toBe('equipements_maintenance');
@@ -39,6 +47,17 @@ describe('contrat Registry v1', () => {
   it('rejette une version de schéma inconnue', () => {
     expect(registrySchema.safeParse({ ...newRegistry(), schema_version: '2.0' }).success).toBe(
       false,
+    );
+  });
+  it('conserve le statut du contrat simplifié, placé juste après la version', () => {
+    const simple = newSimpleRegistry();
+    expect(Object.keys(simple).slice(0, 2)).toEqual(['version', 'status']);
+    expect(simple.status).toBe('active');
+    const doc = fromSimpleRegistry(simple);
+    expect(doc.registry.status).toBe('active');
+    expect(toSimpleRegistry(doc).status).toBe('active');
+    expect(toSimpleRegistry(fromSimpleRegistry({ ...simple, status: 'deprecated' })).status).toBe(
+      'deprecated',
     );
   });
 });

@@ -26,4 +26,18 @@ describe('formulaires dynamiques', () => {
     fireEvent.click(screen.getByRole('button', { name: /Retirer/ }));
     expect(screen.getAllByLabelText('Nom')).toHaveLength(1);
   });
+  it('conserve les saisies existantes lors de l’ajout d’un élément', () => {
+    render(<Fixture />);
+    const add = screen.getByRole('button', { name: /Ajouter/ });
+    fireEvent.click(add);
+    fireEvent.change(screen.getAllByLabelText('Nom')[1]!, { target: { value: 'premier' } });
+    fireEvent.click(add);
+    fireEvent.change(screen.getAllByLabelText('Nom')[2]!, { target: { value: 'second' } });
+    fireEvent.click(add);
+    const inputs = screen.getAllByLabelText('Nom') as HTMLInputElement[];
+    expect(inputs.map((input) => input.value)).toEqual(['', 'premier', 'second', '']);
+    fireEvent.click(screen.getAllByRole('button', { name: /Retirer/ })[0]!);
+    const remaining = screen.getAllByLabelText('Nom') as HTMLInputElement[];
+    expect(remaining.map((input) => input.value)).toEqual(['', 'second', '']);
+  });
 });
