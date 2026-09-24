@@ -11,15 +11,33 @@ export const apiEndpointAccessSchema = z
   .object({
     id: z.string().trim().min(1).max(200),
     description: z.string().trim().max(10000).default(''),
+    usages: uniqueList,
   })
   .strict();
+
+export const apiDefinitionSchema = z
+  .object({
+    openapi: z
+      .string()
+      .trim()
+      .max(2048)
+      .refine(
+        (value) => value === '' || /^https?:\/\/[^\s]+$/i.test(value),
+        'Saisissez une URL OpenAPI HTTP ou HTTPS valide',
+      )
+      .default(''),
+  })
+  .strict()
+  .default({});
 
 const endpointAccessList = z
   .preprocess(
     (value) =>
       Array.isArray(value)
         ? value.map((endpoint) =>
-            typeof endpoint === 'string' ? { id: endpoint, description: '' } : endpoint,
+            typeof endpoint === 'string'
+              ? { id: endpoint, description: '', usages: [] }
+              : endpoint,
           )
         : value,
     z
@@ -53,6 +71,7 @@ export const apiApplicationName = z
 export const apiApplicationSchema = z
   .object({
     collections: uniqueList,
+    api: apiDefinitionSchema,
     endpoint_acces: endpointAccessList,
     tools: uniqueList,
   })
@@ -128,9 +147,9 @@ export function toApiRegistry(value: ApiRegistryForm): ApiRegistry {
   const form = apiRegistryFormSchema.parse(value);
   return apiRegistrySchema.parse({
     applications: Object.fromEntries(
-      form.applications.map(({ name, collections, endpoint_acces, tools }) => [
+      form.applications.map(({ name, collections, api, endpoint_acces, tools }) => [
         name,
-        { collections, endpoint_acces, tools },
+        { collections, api, endpoint_acces, tools },
       ]),
     ),
   });

@@ -14,9 +14,18 @@ describe('contrat des registres API', () => {
         {
           name: 'LEUL WMS',
           collections: ['LEUL-WMS', 'LEUL-COMMUN'],
+          api: { openapi: 'http://leul-wms/api/openapi/v1.json' },
           endpoint_acces: [
-            { id: 'wms_get_palette', description: 'Retrouver une palette.' },
-            { id: 'wms_get_stock', description: 'Consulter le stock.' },
+            {
+              id: 'wms_get_palette',
+              description: 'Retrouver une palette.',
+              usages: ["palettes d'une commande"],
+            },
+            {
+              id: 'wms_get_stock',
+              description: 'Consulter le stock.',
+              usages: ['stock disponible'],
+            },
           ],
           tools: ['sql_inspection', 'sql_executor'],
         },
@@ -27,9 +36,18 @@ describe('contrat des registres API', () => {
       applications: {
         'LEUL WMS': {
           collections: ['LEUL-WMS', 'LEUL-COMMUN'],
+          api: { openapi: 'http://leul-wms/api/openapi/v1.json' },
           endpoint_acces: [
-            { id: 'wms_get_palette', description: 'Retrouver une palette.' },
-            { id: 'wms_get_stock', description: 'Consulter le stock.' },
+            {
+              id: 'wms_get_palette',
+              description: 'Retrouver une palette.',
+              usages: ["palettes d'une commande"],
+            },
+            {
+              id: 'wms_get_stock',
+              description: 'Consulter le stock.',
+              usages: ['stock disponible'],
+            },
           ],
           tools: ['sql_inspection', 'sql_executor'],
         },
@@ -50,8 +68,9 @@ describe('contrat des registres API', () => {
       },
     });
     expect(document.applications['LEUL WMS']!.endpoint_acces).toEqual([
-      { id: 'leulia-get-colis', description: '' },
+      { id: 'leulia-get-colis', description: '', usages: [] },
     ]);
+    expect(document.applications['LEUL WMS']!.api).toEqual({ openapi: '' });
   });
 
   it('refuse deux endpoints portant le même identifiant', () => {
@@ -61,8 +80,8 @@ describe('contrat des registres API', () => {
           APP: {
             collections: [],
             endpoint_acces: [
-              { id: 'get-colis', description: 'Première description' },
-              { id: 'get-colis', description: 'Deuxième description' },
+              { id: 'get-colis', description: 'Première description', usages: [] },
+              { id: 'get-colis', description: 'Deuxième description', usages: [] },
             ],
             tools: [],
           },

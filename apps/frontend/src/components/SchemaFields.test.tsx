@@ -29,9 +29,10 @@ function ApiToolsFixture() {
 }
 
 function EndpointAccessFixture() {
-  const form = useForm({ defaultValues: { endpoint_acces: [] } });
+  const form = useForm({ defaultValues: { api: { openapi: '' }, endpoint_acces: [] } });
   return (
     <FormProvider {...form}>
+      <SchemaFields schema={apiApplicationSchema.shape.api} path="api" />
       <SchemaFields
         schema={apiApplicationSchema.shape.endpoint_acces}
         path="endpoint_acces"
@@ -49,9 +50,12 @@ describe('formulaires dynamiques', () => {
 
   it('permet de documenter chaque endpoint API', () => {
     render(<EndpointAccessFixture />);
+    expect(screen.getByLabelText('URL OpenAPI')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Ajouter · Accès aux endpoints api/ }));
     expect(screen.getByLabelText('Identifiant')).toBeTruthy();
     expect(screen.getByLabelText('Description')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Ajouter · Usages/ }));
+    expect(screen.getByRole('group', { name: /Usages 1/ })).toBeTruthy();
   });
 
   it('affiche les libellés et permet d’ajouter et retirer un champ', () => {

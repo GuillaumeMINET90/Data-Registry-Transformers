@@ -295,6 +295,7 @@ function ApiRegistryEditor({
                       applications.append({
                         name: `APPLICATION-${applications.fields.length + 1}`,
                         collections: [],
+                        api: { openapi: '' },
                         endpoint_acces: [],
                         tools: [],
                       })

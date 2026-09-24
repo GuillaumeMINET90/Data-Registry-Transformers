@@ -133,9 +133,18 @@ describe('API et persistance YAML', () => {
       applications: {
         'LEUL WMS': {
           collections: ['LEUL-WMS', 'LEUL-COMMUN'],
+          api: { openapi: 'http://leul-wms/api/openapi/v1.json' },
           endpoint_acces: [
-            { id: 'wms_get_palette', description: 'Retrouver une palette.' },
-            { id: 'wms_get_stock', description: 'Consulter le stock.' },
+            {
+              id: 'wms_get_palette',
+              description: 'Retrouver une palette.',
+              usages: ["palettes d'une commande"],
+            },
+            {
+              id: 'wms_get_stock',
+              description: 'Consulter le stock.',
+              usages: ['stock disponible'],
+            },
           ],
           tools: ['sql_inspection', 'sql_executor'],
         },
@@ -165,7 +174,7 @@ describe('API et persistance YAML', () => {
     const apiList = await app.inject({ url: '/api/api-registries', headers: auth() });
     expect(apiList.json<ApiRegistryList>().items).toHaveLength(1);
     const endpointSearch = await app.inject({
-      url: '/api/api-registries?search=consulter%20le%20stock',
+      url: '/api/api-registries?search=stock%20disponible',
       headers: auth(),
     });
     expect(endpointSearch.json<ApiRegistryList>().items).toHaveLength(1);
@@ -177,6 +186,7 @@ describe('API et persistance YAML', () => {
     changed.applications['LEUL WMS'].endpoint_acces.push({
       id: 'wms_get_colis',
       description: 'Retrouver un colis.',
+      usages: ["colis d'une commande"],
     });
     const updated = await app.inject({
       method: 'PUT',

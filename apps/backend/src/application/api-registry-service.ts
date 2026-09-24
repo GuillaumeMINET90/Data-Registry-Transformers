@@ -29,9 +29,11 @@ export class ApiRegistryService {
           ...Object.entries(record.document.applications).flatMap(([name, application]) => [
             name,
             ...application.collections,
+            application.api.openapi,
             ...application.endpoint_acces.flatMap((endpoint) => [
               endpoint.id,
               endpoint.description,
+              ...endpoint.usages,
             ]),
             ...application.tools,
           ]),

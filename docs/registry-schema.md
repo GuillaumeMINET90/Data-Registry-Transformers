@@ -107,20 +107,40 @@ applications:
   LEUL-WMS:
     collections:
       - LEUL-WMS
-      - LEUL-COMMUN
+    api:
+      openapi: "http://leul-wms/api/openapi/v1.json"
     endpoint_acces:
       - id: leulia-get-colis
         description: >
-          Retrouver un colis à partir d’un numéro de commande,
-          d’un numéro de colis ou d’une autre référence logistique.
+          Recherche et consultation des colis.
+        usages:
+          - localisation d'un colis
+          - état d'un colis
+          - contenu d'un colis
+          - poids des colis
+          - dimensions des colis
+          - colis d'une commande
+          - colis d'une tournée
       - id: leulia-get-preparation
         description: >
-          Consulter les informations et l’état d’une préparation de commande.
-    tools:
-      - sql_inspection
-      - sql_executor
+          Recherche et consultation des préparations.
+        usages:
+          - palettes d'une commande
+          - colis d'une préparation
+          - position d'une préparation
+          - état de préparation
+          - contenu d'une préparation
+      - id: leulia-get-etat-tournee
+        description: >
+          Consultation de l'état logistique des tournées.
+        usages:
+          - avancement d'une tournée
+          - commandes préparables
+          - tournées en attente
+          - comparaison de tournées
+    tools: []
 ```
 
 Chaque tool référencé doit exister dans `options.tools` de la configuration.
-Chaque entrée de `endpoint_acces` contient un identifiant unique dans l’application et une description libre. Les anciens registres contenant une simple liste de noms restent lisibles ; ils sont convertis vers cette structure lors de leur prochaine modification.
+Le bloc `api.openapi` contient l’URL HTTP ou HTTPS de la spécification OpenAPI. Chaque entrée de `endpoint_acces` contient un identifiant unique dans l’application, une description libre et une liste d’usages. Les anciens registres sans bloc `api`, sans `usages` ou contenant une simple liste d’endpoints restent lisibles ; ils sont convertis vers cette structure lors de leur prochaine modification.
 À la création, l’identifiant est généré côté serveur depuis le nom de la première application : mise en minuscules et remplacement des espaces ou séparateurs par des underscores.
