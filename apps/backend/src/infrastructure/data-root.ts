@@ -44,6 +44,9 @@ export class DataRoot implements ConfigurationRepository {
   get configDirectory(): string {
     return this.layout.config;
   }
+  get apiRegistryDirectory(): string {
+    return this.layout.api;
+  }
   get path(): string {
     return this.current;
   }
@@ -82,7 +85,7 @@ export class DataRoot implements ConfigurationRepository {
   }
   private async prepare(path: string): Promise<StorageLayout> {
     const layout = await detectLayout(path);
-    for (const folder of [layout.config, `${layout.config}/backups`, layout.registry])
+    for (const folder of [layout.config, `${layout.config}/backups`, layout.registry, layout.api])
       await mkdir(await safePath(path, folder), { recursive: true });
     for (const [file, content] of [
       ['application.yml', configSchema.parse({})],
@@ -119,16 +122,25 @@ export class DataRoot implements ConfigurationRepository {
     const readable = await accessible(path, constants.R_OK);
     const writable = await accessible(path, constants.W_OK);
     let registryCount = 0;
+    let apiRegistryCount = 0;
     if (readable) {
-      const walk = async (folder: string): Promise<void> => {
+      const layout = await detectLayout(path);
+      const walk = async (folder: string, api = false): Promise<void> => {
         for (const entry of await readdir(await safePath(path, folder), { withFileTypes: true })) {
           if (entry.isSymbolicLink()) continue;
-          if (entry.isDirectory()) await walk(`${folder}/${entry.name}`);
-          else if (entry.isFile() && /\.ya?ml$/i.test(entry.name)) registryCount++;
+          const child = `${folder}/${entry.name}`;
+          if (entry.isDirectory()) {
+            if (!api && child === layout.api) continue;
+            await walk(child, api);
+          } else if (entry.isFile() && /\.ya?ml$/i.test(entry.name)) {
+            if (api) apiRegistryCount++;
+            else registryCount++;
+          }
         }
       };
       try {
-        await walk((await detectLayout(path)).registry);
+        await walk(layout.registry);
+        await walk(layout.api, true);
       } catch (error) {
         if (!isMissing(error)) throw error;
       }
@@ -142,6 +154,7 @@ export class DataRoot implements ConfigurationRepository {
       readable,
       writable,
       registryCount,
+      apiRegistryCount,
     };
   }
   async changeRoot(path: string, mode: 'existing' | 'new'): Promise<void> {

@@ -54,7 +54,7 @@ export type SimpleRegistry = z.infer<typeof simpleRegistrySchema>;
 export function newSimpleRegistry(): SimpleRegistry {
   return simpleRegistrySchema.parse({
     id: 'nouveau_registry',
-    name: 'Nouveau Registry',
+    name: 'Nouveau Registre',
     service: 'general',
     format: 'pdf',
   });
@@ -323,7 +323,7 @@ export const registrySchema = registryObject.superRefine((doc, ctx) => {
 export type Registry = z.infer<typeof registrySchema>;
 export function newRegistry(): Registry {
   return registrySchema.parse({
-    registry: { id: 'nouveau_registry', name: 'Nouveau Registry', department: 'general' },
+    registry: { id: 'nouveau_registry', name: 'Nouveau Registre', department: 'general' },
     formats: ['pdf'],
   });
 }

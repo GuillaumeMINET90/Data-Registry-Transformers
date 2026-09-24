@@ -159,7 +159,7 @@ export function LegacyEditor({
           <span className="eyebrow">
             REGISTRY / {readOnly ? 'CONSULTATION' : saved ? 'ÉDITION' : 'CRÉATION'}
           </span>
-          <h1>{saved?.document.registry.name ?? t('Nouveau Registry')}</h1>
+          <h1>{saved?.document.registry.name ?? t('Nouveau Registre')}</h1>
           <p>{saved?.path ?? 'Un contrat documentaire, de l’identité aux règles de qualité.'}</p>
         </div>
         {readOnly && saved && (

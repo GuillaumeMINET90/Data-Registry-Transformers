@@ -720,6 +720,43 @@ tbody tr:hover {
   top: 10px;
   right: 5px;
 }
+.api-application {
+  position: relative;
+  margin-bottom: 20px;
+}
+.api-application .application-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.tool-selector select {
+  margin-bottom: 12px;
+}
+.selected-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.selected-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--soft);
+  padding: 6px 8px;
+  font:
+    11px 'Cascadia Code',
+    Consolas,
+    monospace;
+}
+.selected-tool button {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+}
 .field-error {
   color: #b64339;
   font-size: 11px;

@@ -87,7 +87,7 @@ test('onglets, annulation, cartes défilantes et sidebar repliable', async ({ pa
   await page.getByRole('tab', { name: /Document/ }).click();
   await expect(page.getByLabel('Nom', { exact: true })).toHaveValue('Saisie conservée');
   await page.getByRole('button', { name: 'Annuler', exact: true }).click();
-  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue('Nouveau Registry');
+  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue('Nouveau Registre');
   await expectContainedWorkspace(page);
   await page.screenshot({ path: 'test-results/registry-tabs-desktop.png' });
   await page.getByRole('tab', { name: /Document/ }).click();

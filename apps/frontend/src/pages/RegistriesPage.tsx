@@ -60,12 +60,12 @@ export function RegistriesPage() {
       <header className="page-header">
         <div>
           <span className="eyebrow">WORKSPACE / REGISTRIES</span>
-          <h1>{t('Référentiel documentaire')}</h1>
+          <h1>{t('Registres contextes')}</h1>
           <p>{t('Décrivez vos documents. Structurez leur transformation.')}</p>
         </div>
         <Link className="button primary" to="/registries/new">
           <Plus size={18} />
-          {t('Nouveau Registry')}
+          {t('Nouveau Registre')}
         </Link>
       </header>
       {config.data && !config.data.config.setup_completed && (
@@ -241,7 +241,7 @@ export function RegistriesPage() {
             </p>
             <Link className="button primary" to="/registries/new">
               <Plus size={17} />
-              {t('Nouveau Registry')}
+              {t('Nouveau Registre')}
             </Link>
           </div>
         ) : (

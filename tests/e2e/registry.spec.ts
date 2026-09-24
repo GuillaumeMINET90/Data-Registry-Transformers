@@ -4,8 +4,8 @@ test('parcours administrateur complet', async ({ page }) => {
   await page.getByLabel('Utilisateur').fill('admin');
   await page.getByLabel('Mot de passe').fill('e2e-test-password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page.getByRole('heading', { name: 'Référentiel documentaire' })).toBeVisible();
-  await page.getByRole('link', { name: 'Nouveau Registry' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Registres contextes' })).toBeVisible();
+  await page.getByRole('link', { name: 'Nouveau Registre' }).first().click();
   await page.getByLabel('Nom', { exact: true }).fill('Contrat de test');
   await page.getByLabel('Identifiant', { exact: true }).fill('contrat_test');
   await page.getByLabel('Service', { exact: true }).fill('Tests');
@@ -27,7 +27,7 @@ test('parcours administrateur complet', async ({ page }) => {
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.screenshot({ path: 'test-results/registry-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole('heading', { name: 'Référentiel documentaire' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Registres contextes' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

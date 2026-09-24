@@ -146,10 +146,12 @@ function ConfigurationForm({ data: initial }: { data: ConfigResponse }) {
                 <div className="storage-details">
                   <span>Lecture : {data.storage.readable ? '✓' : '✗'}</span>
                   <span>Écriture : {data.storage.writable ? '✓' : '✗'}</span>
-                  <span>{data.storage.registryCount} fichiers YAML</span>
+                  <span>{data.storage.registryCount} registres documentaires</span>
+                  <span>{data.storage.apiRegistryCount} registres API</span>
                 </div>
                 <p>
                   <code>{data.storage.directories.registry}/</code> : registres ·{' '}
+                  <code>{data.storage.directories.api}/</code> : registres API ·{' '}
                   <code>{data.storage.directories.config}/</code> : configuration, sauvegardes et
                   audit
                 </p>
@@ -168,7 +170,7 @@ function ConfigurationForm({ data: initial }: { data: ConfigResponse }) {
               <section className="settings-section">
                 <h2>{t('Options')}</h2>
                 <p className="muted">
-                  Valeurs proposées dans les listes de choix lors de la création d’un Registry.
+                  Services et Api tools proposés dans les listes de choix des formulaires.
                 </p>
                 <SchemaFields schema={configSchema.shape.options} path="options" />
               </section>
@@ -233,8 +235,9 @@ function RootModal({ close, storage }: { close: () => void; storage: StorageStat
         />
       </label>
       <p>
-        Ce dossier contiendra <code>registry/</code> pour les registres et <code>config/</code>
-        pour la configuration, les sauvegardes et l’audit.
+        Ce dossier contiendra <code>registry/</code> pour les registres, <code>registry/api/</code>{' '}
+        pour les registres API et <code>config/</code> pour la configuration, les sauvegardes et
+        l’audit.
       </p>
       {storage.path !== storage.serverPath && (
         <p>
@@ -255,7 +258,7 @@ function RootModal({ close, storage }: { close: () => void; storage: StorageStat
       {test.data && (
         <p role="status">
           {test.data.available
-            ? `Dossier présent · Lecture ${test.data.readable ? '✓' : '✗'} · Écriture ${test.data.writable ? '✓' : '✗'} · ${test.data.registryCount} YAML`
+            ? `Dossier présent · Lecture ${test.data.readable ? '✓' : '✗'} · Écriture ${test.data.writable ? '✓' : '✗'} · ${test.data.registryCount} registres · ${test.data.apiRegistryCount} API`
             : 'Dossier absent : il sera créé en mode nouveau dossier.'}
         </p>
       )}

@@ -2,7 +2,6 @@
 
 Application interne de conception et d’administration de contrats documentaires YAML. React et Fastify, intégralement en TypeScript strict. **Aucune base de données** : les fichiers `.yml` sont la source de vérité. Aucun moteur de transformation, LLM, embedding ou service de graphe n’est exécuté.
 
-
 ## Démarrer en développement
 
 Prérequis : **Node.js 24 LTS**, **pnpm 10.28.2**. Si pnpm est absent : `npm install --global pnpm@10.28.2`.
@@ -136,7 +135,10 @@ data_root/
     audit.yml
     audit-<timestamp>.yml
     backups/<registry_id>/<date>-<hash>.yml
-  registry/<service>/<identifiant-avec-tirets>.yml
+    backups/api/<api_registry_id>/<date>-<hash>.yml
+  registry/
+    <service>/<identifiant-avec-tirets>.yml
+    api/<identifiant-api-avec-tirets>.yml
 runtime/data-root.yml
 ```
 
@@ -158,6 +160,8 @@ Le Compose local utilise un volume de bootstrap distinct pour démarrer sur ce n
 ## Contrats et usage
 
 Le formulaire comporte Identité, Contexte métier, Reconnaissance, Structure, Transformation, Relations, RAG, Qualité et YAML. Les champs répétables ont des boutons d’ajout et de retrait. Un Registry ne peut être enregistré que si le schéma et ses références sont valides. Le mode strict exige au moins deux catégories de signaux pour un Registry actif.
+
+L’onglet **Registres API** gère un catalogue séparé dans `registry/api/`. Un fichier peut déclarer plusieurs applications avec leurs `collections`, `endpoint_acces` et `tools`. Chaque endpoint comporte un `id` et une `description` expliquant son usage ; les anciens endpoints déclarés sous forme de chaînes restent lisibles. Les tools disponibles sont administrés dans **Configuration › Options**, puis ajoutés aux applications depuis une liste de sélection. À la création, l’identifiant technique est généré côté serveur depuis le nom de la première application (minuscules et underscores) ; il n’est pas ajouté au YAML métier.
 
 Configuration et édition de Registry utilisent des onglets horizontaux sous le titre. Une seule carte est affichée à la fois : son contenu défile dans la hauteur disponible, tandis que les boutons Annuler et Enregistrer restent visibles en bas à droite. Changer d’onglet conserve les saisies ; Annuler rétablit les dernières valeurs enregistrées (ou les valeurs initiales pour un nouveau Registry). La sidebar peut être repliée en une colonne d’icônes et dépliée ; ce choix est mémorisé dans le navigateur. Sur mobile, le menu s’ouvre comme un panneau superposé.
 

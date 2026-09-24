@@ -42,6 +42,11 @@ export const configSchema = z
           .max(200)
           .refine((values) => new Set(values).size === values.length, 'Services en double')
           .default(['general']),
+        tools: z
+          .array(z.string().trim().min(1).max(100))
+          .max(500)
+          .refine((values) => new Set(values).size === values.length, 'Tools en double')
+          .default(['sql_inspection', 'sql_executor']),
       })
       .strict()
       .default({}),

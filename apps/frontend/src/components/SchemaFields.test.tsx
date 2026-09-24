@@ -5,6 +5,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { apiApplicationSchema } from '@dtr/shared';
 import { SchemaFields } from './SchemaFields';
 afterEach(cleanup);
 function Fixture() {
@@ -17,7 +18,42 @@ function Fixture() {
     </FormProvider>
   );
 }
+
+function ApiToolsFixture() {
+  const form = useForm({ defaultValues: { tools: ['sql_inspection'] } });
+  return (
+    <FormProvider {...form}>
+      <SchemaFields schema={z.object({ tools: z.array(z.string()) })} />
+    </FormProvider>
+  );
+}
+
+function EndpointAccessFixture() {
+  const form = useForm({ defaultValues: { endpoint_acces: [] } });
+  return (
+    <FormProvider {...form}>
+      <SchemaFields
+        schema={apiApplicationSchema.shape.endpoint_acces}
+        path="endpoint_acces"
+      />
+    </FormProvider>
+  );
+}
+
 describe('formulaires dynamiques', () => {
+  it('nomme les tools configurables Api tools', () => {
+    render(<ApiToolsFixture />);
+    expect(screen.getByRole('group', { name: /Api tools/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Ajouter · Api tools/ })).toBeTruthy();
+  });
+
+  it('permet de documenter chaque endpoint API', () => {
+    render(<EndpointAccessFixture />);
+    fireEvent.click(screen.getByRole('button', { name: /Ajouter · Accès aux endpoints api/ }));
+    expect(screen.getByLabelText('Identifiant')).toBeTruthy();
+    expect(screen.getByLabelText('Description')).toBeTruthy();
+  });
+
   it('affiche les libellés et permet d’ajouter et retirer un champ', () => {
     render(<Fixture />);
     expect(screen.getByLabelText('Nom')).toBeTruthy();

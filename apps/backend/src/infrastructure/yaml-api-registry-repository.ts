@@ -1,8 +1,8 @@
-import { readdir, unlink } from 'node:fs/promises';
-import { relative } from 'node:path';
-import { identifier, normalizeId, validateRegistry, registryYamlDocument } from '@dtr/shared';
-import type { AppConfig, Registry, RegistryRecord } from '@dtr/shared';
-import type { Catalog, RegistryRepository } from '../domain/ports.js';
+import { readdir, stat, unlink } from 'node:fs/promises';
+import { basename, relative } from 'node:path';
+import { apiRegistrySchema, identifier, normalizeId } from '@dtr/shared';
+import type { ApiRegistry, ApiRegistryRecord, AppConfig, InvalidFile } from '@dtr/shared';
+import type { ApiRegistryRepository } from '../domain/ports.js';
 import { AppError, conflict } from '../domain/errors.js';
 import {
   atomicWrite,
@@ -15,67 +15,63 @@ import {
 } from './filesystem.js';
 import type { DataRoot } from './data-root.js';
 
-export class YamlRegistryRepository implements RegistryRepository {
-  private cache?: { root: string; expires: number; catalog: Catalog };
+interface ApiCatalog {
+  items: ApiRegistryRecord[];
+  invalid: InvalidFile[];
+}
+
+export class YamlApiRegistryRepository implements ApiRegistryRepository {
+  private cache?: { root: string; expires: number; catalog: ApiCatalog };
+
   constructor(
     private readonly root: DataRoot,
     private readonly cacheMs = 3000,
   ) {}
-  async scan(force = false): Promise<Catalog> {
+
+  async scan(force = false): Promise<ApiCatalog> {
     if (!force && this.cache?.root === this.root.path && this.cache.expires > Date.now())
       return structuredClone(this.cache.catalog);
-    const catalog: Catalog = { items: [], invalid: [] };
-    const { config } = await this.root.read();
+    const catalog: ApiCatalog = { items: [], invalid: [] };
     const walk = async (folder: string): Promise<void> => {
       for (const entry of await readdir(await safePath(this.root.path, folder), {
         withFileTypes: true,
       })) {
         const path = `${folder}/${entry.name}`;
+        const relativePath = path.slice(this.root.apiRegistryDirectory.length + 1);
         if (entry.isSymbolicLink()) {
-          catalog.invalid.push({ path, error: 'Lien symbolique interdit' });
+          catalog.invalid.push({ path: relativePath, error: 'Lien symbolique interdit' });
           continue;
         }
         if (entry.isDirectory()) {
-          if (path === this.root.apiRegistryDirectory) continue;
           await walk(path);
           continue;
         }
         if (!entry.isFile() || !/\.ya?ml$/i.test(entry.name)) continue;
         try {
           const raw = await readText(await safePath(this.root.path, path));
-          const value = decodeYaml(raw);
-          if (
-            config.registry.unknown_yaml === 'ignore' &&
-            (!value ||
-              typeof value !== 'object' ||
-              (!('schema_version' in value) && !('version' in value)))
-          )
-            continue;
-          const document = validateRegistry(value, config.registry.validation_mode);
+          const id = identifier.parse(normalizeId(basename(entry.name).replace(/\.ya?ml$/i, '')));
           catalog.items.push({
-            document,
+            id,
+            document: apiRegistrySchema.parse(decodeYaml(raw)),
             etag: digest(raw),
             yaml: raw,
-            path: path.slice(this.root.registryDirectory.length + 1),
+            path: relativePath,
+            updatedAt: (await stat(await safePath(this.root.path, path))).mtime.toISOString(),
           });
         } catch (error) {
           catalog.invalid.push({
-            path: path.slice(this.root.registryDirectory.length + 1),
+            path: relativePath,
             error: error instanceof Error ? error.message : 'YAML invalide',
           });
         }
       }
     };
-    await walk(this.root.registryDirectory);
+    await walk(this.root.apiRegistryDirectory);
     const counts = new Map<string, number>();
-    for (const record of catalog.items)
-      counts.set(record.document.registry.id, (counts.get(record.document.registry.id) ?? 0) + 1);
+    for (const record of catalog.items) counts.set(record.id, (counts.get(record.id) ?? 0) + 1);
     catalog.items = catalog.items.filter((record) => {
-      if (counts.get(record.document.registry.id)! > 1) {
-        catalog.invalid.push({
-          path: record.path,
-          error: `Identifiant dupliqué : ${record.document.registry.id}`,
-        });
+      if (counts.get(record.id)! > 1) {
+        catalog.invalid.push({ path: record.path, error: `Identifiant dupliqué : ${record.id}` });
         return false;
       }
       return true;
@@ -83,30 +79,22 @@ export class YamlRegistryRepository implements RegistryRepository {
     this.cache = { root: this.root.path, expires: Date.now() + this.cacheMs, catalog };
     return structuredClone(catalog);
   }
-  async find(id: string): Promise<RegistryRecord> {
+
+  async find(id: string): Promise<ApiRegistryRecord> {
     identifier.parse(id);
-    const found = (await this.scan(true)).items.find((item) => item.document.registry.id === id);
-    if (!found) throw new AppError(404, 'NOT_FOUND', 'Registry introuvable ou invalide');
+    const found = (await this.scan(true)).items.find((item) => item.id === id);
+    if (!found) throw new AppError(404, 'NOT_FOUND', 'Registre API introuvable ou invalide');
     return found;
   }
-  async create(document: Registry, config: AppConfig): Promise<RegistryRecord> {
+
+  async create(id: string, document: ApiRegistry, _config: AppConfig): Promise<ApiRegistryRecord> {
+    identifier.parse(id);
     const catalog = await this.scan(true);
-    if (
-      catalog.items.some((item) => item.document.registry.id === document.registry.id) ||
-      catalog.invalid.some(
-        (item) => item.error === `Identifiant dupliqué : ${document.registry.id}`,
-      )
-    )
+    if (catalog.items.some((item) => item.id === id))
       throw new AppError(409, 'DUPLICATE_ID', 'Cet identifiant existe déjà');
-    const department = normalizeId(document.registry.department).replaceAll('_', '-') || 'general';
-    const filename = `${document.registry.id.replaceAll('_', '-')}.yml`;
-    const path = await safePath(
-      this.root.path,
-      this.root.registryDirectory,
-      ...(config.registry.group_by_department ? [department] : []),
-      filename,
-    );
-    const yaml = encodeYaml(registryYamlDocument(document));
+    const filename = `${id.replaceAll('_', '-')}.yml`;
+    const path = await safePath(this.root.path, this.root.apiRegistryDirectory, filename);
+    const yaml = encodeYaml(document);
     try {
       await atomicWrite(path, yaml, true);
     } catch (error) {
@@ -116,20 +104,23 @@ export class YamlRegistryRepository implements RegistryRepository {
     }
     this.cache = undefined;
     return {
+      id,
       document,
       yaml,
       etag: digest(yaml),
-      path: relative(`${this.root.path}/${this.root.registryDirectory}`, path).replaceAll(
+      path: relative(`${this.root.path}/${this.root.apiRegistryDirectory}`, path).replaceAll(
         '\\',
         '/',
       ),
+      updatedAt: new Date().toISOString(),
     };
   }
-  private async backup(record: RegistryRecord, maximum: number): Promise<void> {
+
+  private async backup(record: ApiRegistryRecord, maximum: number): Promise<void> {
     const folder = await safePath(
       this.root.path,
-      `${this.root.configDirectory}/backups`,
-      record.document.registry.id,
+      `${this.root.configDirectory}/backups/api`,
+      record.id,
     );
     await atomicWrite(
       await safePath(
@@ -144,31 +135,38 @@ export class YamlRegistryRepository implements RegistryRepository {
       .reverse();
     for (const file of files.slice(maximum)) await unlink(await safePath(folder, file));
   }
+
   async update(
     id: string,
-    document: Registry,
+    document: ApiRegistry,
     etag: string,
     config: AppConfig,
-  ): Promise<RegistryRecord> {
+  ): Promise<ApiRegistryRecord> {
     const previous = await this.find(id);
     if (previous.etag !== etag) throw conflict();
-    if (document.registry.id !== id)
-      throw new AppError(400, 'IMMUTABLE_ID', 'Pour changer l’identifiant, clonez le Registry');
     if (config.registry.backup_before_update)
       await this.backup(previous, config.registry.max_backups);
-    const path = await safePath(this.root.path, this.root.registryDirectory, previous.path);
+    const path = await safePath(this.root.path, this.root.apiRegistryDirectory, previous.path);
     if (digest(await readText(path)) !== etag) throw conflict();
-    const yaml = encodeYaml(registryYamlDocument(document));
+    const yaml = encodeYaml(document);
     await atomicWrite(path, yaml);
     this.cache = undefined;
-    return { document, yaml, etag: digest(yaml), path: previous.path };
+    return {
+      id,
+      document,
+      yaml,
+      etag: digest(yaml),
+      path: previous.path,
+      updatedAt: new Date().toISOString(),
+    };
   }
+
   async delete(id: string, etag: string, config: AppConfig): Promise<void> {
     const previous = await this.find(id);
     if (previous.etag !== etag) throw conflict();
     if (config.registry.backup_before_delete)
       await this.backup(previous, config.registry.max_backups);
-    const path = await safePath(this.root.path, this.root.registryDirectory, previous.path);
+    const path = await safePath(this.root.path, this.root.apiRegistryDirectory, previous.path);
     try {
       if (digest(await readText(path)) !== etag) throw conflict();
       await unlink(path);

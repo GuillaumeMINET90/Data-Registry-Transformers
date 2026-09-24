@@ -5,7 +5,13 @@ import { join } from 'node:path';
 import argon2 from 'argon2';
 import type { FastifyInstance } from 'fastify';
 import { newRegistry, simpleRegistrySchema } from '@dtr/shared';
-import type { ConfigResponse, RegistryRecord, RegistryList } from '@dtr/shared';
+import type {
+  ApiRegistryList,
+  ApiRegistryRecord,
+  ConfigResponse,
+  RegistryRecord,
+  RegistryList,
+} from '@dtr/shared';
 import { buildApp } from './app.js';
 import { environmentSchema, type Environment } from './config/environment.js';
 import { decodeYaml } from './infrastructure/filesystem.js';
@@ -122,6 +128,92 @@ describe('API et persistance YAML', () => {
     expect(response.statusCode, response.body).toBe(201);
     return response.json<RegistryRecord>();
   }
+  it('gère les registres API dans registry/api sans polluer les registres documentaires', async () => {
+    const document = {
+      applications: {
+        'LEUL WMS': {
+          collections: ['LEUL-WMS', 'LEUL-COMMUN'],
+          endpoint_acces: [
+            { id: 'wms_get_palette', description: 'Retrouver une palette.' },
+            { id: 'wms_get_stock', description: 'Consulter le stock.' },
+          ],
+          tools: ['sql_inspection', 'sql_executor'],
+        },
+      },
+    };
+    const preview = await app.inject({
+      method: 'POST',
+      url: '/api/api-registries/preview',
+      headers: auth(),
+      payload: { document },
+    });
+    expect(preview.statusCode, preview.body).toBe(200);
+    expect(decodeYaml(preview.json<{ yaml: string }>().yaml)).toEqual(document);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/api-registries',
+      headers: auth(),
+      payload: { document },
+    });
+    expect(response.statusCode, response.body).toBe(201);
+    const created = response.json<ApiRegistryRecord>();
+    expect(created.id).toBe('leul_wms');
+    expect(created.path).toBe('leul-wms.yml');
+    expect(
+      decodeYaml(await readFile(join(env.DTR_DATA_ROOT, 'registry', 'api', created.path), 'utf8')),
+    ).toEqual(document);
+    const apiList = await app.inject({ url: '/api/api-registries', headers: auth() });
+    expect(apiList.json<ApiRegistryList>().items).toHaveLength(1);
+    const endpointSearch = await app.inject({
+      url: '/api/api-registries?search=consulter%20le%20stock',
+      headers: auth(),
+    });
+    expect(endpointSearch.json<ApiRegistryList>().items).toHaveLength(1);
+    const registryList = await app.inject({ url: '/api/registries', headers: auth() });
+    expect(registryList.json<RegistryList>().invalid).toHaveLength(0);
+    expect(registryList.json<RegistryList>().total).toBe(0);
+
+    const changed = structuredClone(document);
+    changed.applications['LEUL WMS'].endpoint_acces.push({
+      id: 'wms_get_colis',
+      description: 'Retrouver un colis.',
+    });
+    const updated = await app.inject({
+      method: 'PUT',
+      url: '/api/api-registries/leul_wms',
+      headers: { ...auth(), 'if-match': created.etag },
+      payload: changed,
+    });
+    expect(updated.statusCode, updated.body).toBe(200);
+    expect(updated.json<ApiRegistryRecord>().document).toEqual(changed);
+    expect(
+      await readdir(join(env.DTR_DATA_ROOT, 'config', 'backups', 'api', 'leul_wms')),
+    ).toHaveLength(1);
+
+    const deleted = await app.inject({
+      method: 'DELETE',
+      url: '/api/api-registries/leul_wms',
+      headers: { ...auth(), 'if-match': updated.json<ApiRegistryRecord>().etag },
+    });
+    expect(deleted.statusCode).toBe(204);
+  });
+
+  it('refuse un tool API absent des options configurées', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/api-registries',
+      headers: auth(),
+      payload: {
+        document: {
+          applications: {
+            APP: { collections: [], endpoint_acces: [], tools: ['shell_root'] },
+          },
+        },
+      },
+    });
+    expect(response.statusCode).toBe(422);
+    expect(response.body).toContain('Configuration');
+  });
   it('accepte le mot de passe direct sans le persister ni l’exposer', async () => {
     const password = '  Long direct password $ with spaces  ';
     await app.close();
@@ -281,7 +373,7 @@ describe('API et persistance YAML', () => {
   it('détecte les modifications manuelles, conflits et YAML invalides', async () => {
     const created = await create();
     const path = join(env.DTR_DATA_ROOT, 'registry', created.path);
-    await writeFile(path, created.yaml.replace('Nouveau Registry', 'Édition externe'));
+    await writeFile(path, created.yaml.replace('Nouveau Registre', 'Édition externe'));
     const read = await app.inject({ url: '/api/registries/nouveau_registry', headers: auth() });
     expect(read.json<RegistryRecord>().document.registry.name).toBe('Édition externe');
     expect(

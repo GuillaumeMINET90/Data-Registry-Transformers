@@ -2,7 +2,7 @@
 
 ## Frontières et extension
 
-Le domaine expose des ports (`RegistryRepository`, `ConfigurationRepository`, `AuditLog`, `UnitOfWork`, `Clock`). Les services applicatifs coordonnent les règles, les métadonnées et les opérations. Les adaptateurs implémentent la persistance et l’authentification. `app.ts` effectue l’assemblage et la traduction centrale des erreurs. Le frontend n’importe aucun module backend.
+Le domaine expose des ports (`RegistryRepository`, `ApiRegistryRepository`, `ConfigurationRepository`, `AuditLog`, `UnitOfWork`, `Clock`). Les services applicatifs coordonnent les règles, les métadonnées et les opérations. Les adaptateurs implémentent la persistance et l’authentification. `app.ts` effectue l’assemblage et la traduction centrale des erreurs. Le frontend n’importe aucun module backend. Les registres documentaires et API possèdent des dépôts et caches distincts ; le catalogue documentaire exclut explicitement `registry/api/`.
 
 Pour ajouter une version de contrat, introduire un schéma autonome dans `packages/shared` et un dispatcher dans `validateRegistry`, avec migration explicite et tests de compatibilité. La version 1.0 est volontairement stricte : une propriété inconnue est refusée, jamais supprimée silencieusement. Les ajouts métier se font dans les YAML ; les nouveaux types de contrat dans les schémas.
 

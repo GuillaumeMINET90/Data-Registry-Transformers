@@ -9,6 +9,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Braces,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/AuthProvider';
 import { useConfiguration } from '../features/configuration/queries';
@@ -81,12 +82,21 @@ function Shell() {
         <nav>
           <NavLink
             to="/registries"
-            aria-label={t('Registries')}
-            title={t('Registries')}
+            aria-label={t('Registres contextes')}
+            title={t('Registres contextes')}
             onClick={() => setMenu(false)}
           >
             <LibraryBig size={18} />
-            <span>{t('Registries')}</span>
+            <span>{t('Registres contextes')}</span>
+          </NavLink>
+          <NavLink
+            to="/apis"
+            aria-label="Registres API"
+            title="Registres API"
+            onClick={() => setMenu(false)}
+          >
+            <Braces size={18} />
+            <span>Registres API</span>
           </NavLink>
           <NavLink
             to="/configuration"

@@ -2,9 +2,17 @@ import { isAbsolute, posix, relative, resolve, win32 } from 'node:path';
 import { AppError } from '../domain/errors.js';
 import { accessible, constants, isInside, safePath } from './filesystem.js';
 
-export const standardLayout = { config: 'config', registry: 'registry' } as const;
-const legacyLayout = { config: 'appConfig', registry: 'registries' } as const;
-export type StorageLayout = { config: string; registry: string };
+export const standardLayout = {
+  config: 'config',
+  registry: 'registry',
+  api: 'registry/api',
+} as const;
+const legacyLayout = {
+  config: 'appConfig',
+  registry: 'registries',
+  api: 'registries/api',
+} as const;
+export type StorageLayout = { config: string; registry: string; api: string };
 
 // Keep existing stores readable without silently moving or hiding their files.
 export async function detectLayout(root: string): Promise<StorageLayout> {

@@ -8,6 +8,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegistriesPage } from './pages/RegistriesPage';
 import { RegistryEditorPage } from './pages/RegistryEditorPage';
 import { ConfigurationPage } from './pages/ConfigurationPage';
+import { ApiRegistriesPage } from './pages/ApiRegistriesPage';
+import { ApiRegistryEditorPage } from './pages/ApiRegistryEditorPage';
 import { Loading } from './components/Feedback';
 import './styles.css';
 import './app/workspace.css';
@@ -28,6 +30,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/registries/new" element={<RegistryEditorPage />} />
               <Route path="/registries/:id" element={<RegistryEditorPage readOnly />} />
               <Route path="/registries/:id/edit" element={<RegistryEditorPage />} />
+              <Route path="/apis" element={<ApiRegistriesPage />} />
+              <Route path="/apis/new" element={<ApiRegistryEditorPage />} />
+              <Route path="/apis/:id" element={<ApiRegistryEditorPage readOnly />} />
+              <Route path="/apis/:id/edit" element={<ApiRegistryEditorPage />} />
               <Route path="/configuration" element={<ConfigurationPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/registries" replace />} />

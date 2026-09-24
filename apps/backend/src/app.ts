@@ -9,11 +9,13 @@ import { AppError } from './domain/errors.js';
 import type { Environment } from './config/environment.js';
 import { DataRoot } from './infrastructure/data-root.js';
 import { YamlRegistryRepository } from './infrastructure/yaml-registry-repository.js';
+import { YamlApiRegistryRepository } from './infrastructure/yaml-api-registry-repository.js';
 import { YamlAuditLog } from './infrastructure/yaml-audit.js';
 import { SerialUnitOfWork } from './infrastructure/mutex.js';
 import { AuthService } from './infrastructure/auth.js';
 import { resolveAdminPasswordHash } from './infrastructure/admin-credentials.js';
 import { ConfigurationService, RegistryService } from './application/registry-service.js';
+import { ApiRegistryService } from './application/api-registry-service.js';
 import { registerRoutes } from './http/routes.js';
 export async function buildApp(env: Environment) {
   const passwordHash = await resolveAdminPasswordHash(env);
@@ -42,9 +44,11 @@ export async function buildApp(env: Environment) {
   await root.initialize();
   const transaction = new SerialUnitOfWork();
   const repository = new YamlRegistryRepository(root);
+  const apiRepository = new YamlApiRegistryRepository(root);
   const audit = new YamlAuditLog(root);
   const clock = { now: () => new Date().toISOString() };
   const registries = new RegistryService(repository, root, audit, transaction, clock);
+  const apiRegistries = new ApiRegistryService(apiRepository, root, audit, transaction, clock);
   const configuration = new ConfigurationService(root, audit, transaction, clock);
   await app.register(cookie, { secret: env.DTR_SESSION_SECRET });
   await app.register(helmet, {
@@ -91,6 +95,7 @@ export async function buildApp(env: Environment) {
   });
   await registerRoutes(app, {
     registries,
+    apiRegistries,
     configuration,
     auth: new AuthService(env.DTR_ADMIN_USERNAME, passwordHash, env.DTR_SESSION_TTL_SECONDS),
     env,

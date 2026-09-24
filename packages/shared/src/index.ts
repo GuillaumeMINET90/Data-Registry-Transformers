@@ -1,8 +1,10 @@
 export * from './registry.js';
 export * from './config.js';
+export * from './api-registry.js';
 export { stringify as stringifyYaml } from 'yaml';
 import type { Registry } from './registry.js';
 import type { AppConfig } from './config.js';
+import type { ApiRegistry } from './api-registry.js';
 export interface RegistryRecord {
   document: Registry;
   etag: string;
@@ -12,6 +14,19 @@ export interface RegistryRecord {
 export interface InvalidFile {
   path: string;
   error: string;
+}
+export interface ApiRegistryRecord {
+  id: string;
+  document: ApiRegistry;
+  etag: string;
+  path: string;
+  yaml: string;
+  updatedAt: string;
+}
+export interface ApiRegistryList {
+  items: ApiRegistryRecord[];
+  invalid: InvalidFile[];
+  total: number;
 }
 export interface RegistryList {
   items: RegistryRecord[];
@@ -27,11 +42,12 @@ export interface RegistryList {
 export interface StorageStatus {
   path: string;
   serverPath: string;
-  directories: { config: string; registry: string };
+  directories: { config: string; registry: string; api: string };
   available: boolean;
   readable: boolean;
   writable: boolean;
   registryCount: number;
+  apiRegistryCount: number;
 }
 export interface ConfigResponse {
   config: AppConfig;

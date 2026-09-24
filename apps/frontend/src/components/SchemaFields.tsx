@@ -6,6 +6,10 @@ import { normalizeId } from '@dtr/shared';
 const labels: Record<string, string> = {
   service: 'Service',
   services: 'Services',
+  tools: 'Api tools',
+  registries: 'Référentiel document',
+  collections: 'Collections',
+  endpoint_acces: "Accès aux endpoints api",
   format: 'Format',
   filenames: 'Noms de fichiers',
   split_by: 'Découpage',

@@ -149,7 +149,7 @@ function Editor({ initial, readOnly }: { initial?: RegistryRecord; readOnly: boo
           <span className="eyebrow">
             REGISTRY / {readOnly ? 'CONSULTATION' : saved ? 'ÉDITION' : 'CRÉATION'}
           </span>
-          <h1>{saved?.document.registry.name ?? t('Nouveau Registry')}</h1>
+          <h1>{saved?.document.registry.name ?? t('Nouveau Registre')}</h1>
           <p>{saved?.path ?? 'Reconnaissance, transformation et contexte du document.'}</p>
         </div>
         {readOnly && saved && (

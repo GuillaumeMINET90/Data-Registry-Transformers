@@ -9,8 +9,8 @@ const english: Record<string, string> = {
   'Réduire le menu': 'Collapse menu',
   'Fermer le menu': 'Close menu',
   'Modifications annulées': 'Changes discarded',
-  'Nouveau Registry': 'New registry',
-  'Référentiel documentaire': 'Document registry',
+  'Nouveau Registre': 'New registry',
+  'Registres contextes': 'Context registries',
   'Décrivez vos documents. Structurez leur transformation.':
     'Describe your documents. Define their transformation.',
   Actif: 'Active',

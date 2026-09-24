@@ -8,6 +8,7 @@ import {
   registryYamlDocument,
 } from '@dtr/shared';
 import type { RegistryService, ConfigurationService } from '../application/registry-service.js';
+import type { ApiRegistryService } from '../application/api-registry-service.js';
 import { requireEtag } from '../application/registry-service.js';
 import type { AuthService, Session } from '../infrastructure/auth.js';
 import type { Environment } from '../config/environment.js';
@@ -20,13 +21,14 @@ declare module 'fastify' {
 }
 interface Dependencies {
   registries: RegistryService;
+  apiRegistries: ApiRegistryService;
   configuration: ConfigurationService;
   auth: AuthService;
   env: Environment;
 }
 export async function registerRoutes(
   app: FastifyInstance,
-  { registries, configuration, auth, env }: Dependencies,
+  { registries, apiRegistries, configuration, auth, env }: Dependencies,
 ): Promise<void> {
   app.decorateRequest('admin', null);
   app.decorateRequest('sessionToken', null);
@@ -106,6 +108,53 @@ export async function registerRoutes(
     const input = rootChangeSchema.parse(request.body);
     return configuration.changeRoot(input.path, input.mode, user(request));
   });
+  app.get('/api/api-registries', async (request) => {
+    const query = z.object({ search: z.string().max(200).default('') }).parse(request.query);
+    return apiRegistries.list(query.search);
+  });
+  app.post('/api/api-registries/preview', async (request) => {
+    const input = z.object({ document: z.unknown() }).strict().parse(request.body);
+    const result = await apiRegistries.preview(input.document);
+    return { ...result, yaml: stringifyYaml(result.document, { lineWidth: 100 }) };
+  });
+  app.post('/api/api-registries', async (request, reply) => {
+    const input = z.object({ document: z.unknown() }).strict().parse(request.body);
+    const result = await apiRegistries.create(input.document, user(request));
+    request.log.info({ event: 'API_CREATE', registry: result.id });
+    return reply.code(201).send(result);
+  });
+  app.get('/api/api-registries/:id', async (request, reply) => {
+    const result = await apiRegistries.get(id(request));
+    reply.header('ETag', `"${result.etag}"`);
+    return result;
+  });
+  app.put('/api/api-registries/:id', async (request) =>
+    apiRegistries.update(
+      id(request),
+      request.body,
+      requireEtag(request.headers['if-match']),
+      user(request),
+    ),
+  );
+  app.delete('/api/api-registries/:id', async (request, reply) => {
+    await apiRegistries.delete(
+      id(request),
+      requireEtag(request.headers['if-match']),
+      user(request),
+    );
+    return reply.code(204).send();
+  });
+  for (const endpoint of ['yaml', 'download'])
+    app.get(`/api/api-registries/:id/${endpoint}`, async (request, reply) => {
+      const result = await apiRegistries.get(id(request));
+      reply.type('application/yaml; charset=utf-8');
+      if (endpoint === 'download')
+        reply.header(
+          'Content-Disposition',
+          `attachment; filename="${result.id.replaceAll('_', '-')}.yml"`,
+        );
+      return result.yaml;
+    });
   app.get('/api/registries', async (request) =>
     registries.list(
       z
@@ -190,15 +239,23 @@ export async function registerRoutes(
     try {
       const { storage } = await configuration.get();
       const list = await registries.list({ pageSize: 1 });
+      const apiList = await apiRegistries.list();
       const ok = storage.readable && storage.writable;
       return reply.code(ok ? 200 : 503).send({
         status: ok ? 'ok' : 'error',
         dataRootAccessible: ok,
         registryCount: list.stats.total,
         invalidCount: list.invalid.length,
+        apiRegistryCount: apiList.total,
+        apiInvalidCount: apiList.invalid.length,
       });
     } catch {
-      return reply.code(503).send({ status: 'error', dataRootAccessible: false, registryCount: 0 });
+      return reply.code(503).send({
+        status: 'error',
+        dataRootAccessible: false,
+        registryCount: 0,
+        apiRegistryCount: 0,
+      });
     }
   });
 }

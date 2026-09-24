@@ -73,21 +73,54 @@ Tous les scores sont dans [0,1]. Le seuil de revue humaine est supérieur ou ég
 
 L’API est sous `/api`, authentifiée sauf `POST /auth/login`. Authentification de session par cookie, CSRF fourni par `/auth/me` ou `/auth/login`. Les écritures nécessitent `X-CSRF-Token`. La connexion nécessite `X-DTR-Client: web`.
 
-| Méthode et chemin               | Usage                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| `GET /registries`               | Recherche, filtres, tri, pagination, erreurs de fichiers et statistiques |
-| `POST /registries`              | Créer un contrat                                                         |
-| `GET /registries/:id`           | Contrat, chemin relatif, YAML exact, ETag                                |
-| `PUT /registries/:id`           | Modifier ; `If-Match` obligatoire                                        |
-| `DELETE /registries/:id`        | Supprimer ; `If-Match` obligatoire                                       |
-| `POST /registries/:id/clone`    | `{ id, name, department, version }`                                      |
-| `GET /registries/:id/yaml`      | YAML texte exact                                                         |
-| `GET /registries/:id/download`  | Téléchargement YAML                                                      |
-| `POST /registries/validate`     | Valider un contrat sans persister                                        |
-| `POST /registries/preview`      | `{ document, id? }` → `{ document, yaml, token }`, jeton valable 10 min  |
-| `GET /config`                   | Configuration, ETag, état de stockage et sécurité non sensible           |
-| `PUT /config`                   | Remplacer la configuration ; `If-Match` obligatoire                      |
-| `POST /config/data-root/test`   | `{ path }`                                                               |
-| `POST /config/data-root/change` | `{ path, mode: "new" ou "existing" }`                                    |
+| Méthode et chemin                  | Usage                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| `GET /registries`                  | Recherche, filtres, tri, pagination, erreurs de fichiers et statistiques |
+| `POST /registries`                 | Créer un contrat                                                         |
+| `GET /registries/:id`              | Contrat, chemin relatif, YAML exact, ETag                                |
+| `PUT /registries/:id`              | Modifier ; `If-Match` obligatoire                                        |
+| `DELETE /registries/:id`           | Supprimer ; `If-Match` obligatoire                                       |
+| `POST /registries/:id/clone`       | `{ id, name, department, version }`                                      |
+| `GET /registries/:id/yaml`         | YAML texte exact                                                         |
+| `GET /registries/:id/download`     | Téléchargement YAML                                                      |
+| `POST /registries/validate`        | Valider un contrat sans persister                                        |
+| `POST /registries/preview`         | `{ document, id? }` → `{ document, yaml, token }`, jeton valable 10 min  |
+| `GET /api-registries`              | Recherche et erreurs des registres API                                   |
+| `POST /api-registries`             | `{ document }` ; crée un YAML sous `registry/api/`                       |
+| `GET /api-registries/:id`          | Contrat API, chemin relatif, YAML exact et ETag                          |
+| `PUT /api-registries/:id`          | Modifier ; `If-Match` obligatoire                                        |
+| `DELETE /api-registries/:id`       | Supprimer ; `If-Match` obligatoire                                       |
+| `POST /api-registries/preview`     | `{ document }` → identifiant généré, contrat validé et YAML              |
+| `GET /api-registries/:id/yaml`     | YAML texte exact                                                         |
+| `GET /api-registries/:id/download` | Téléchargement YAML                                                      |
+| `GET /config`                      | Configuration, ETag, état de stockage et sécurité non sensible           |
+| `PUT /config`                      | Remplacer la configuration ; `If-Match` obligatoire                      |
+| `POST /config/data-root/test`      | `{ path }`                                                               |
+| `POST /config/data-root/change`    | `{ path, mode: "new" ou "existing" }`                                    |
 
 Pour enregistrer un aperçu exact : envoyer le `document` retourné et son jeton dans `X-Preview-Token`. Les métadonnées sont alors celles déjà affichées. Sans jeton, l’API prépare les métadonnées lors de l’écriture. Une requête portant un jeton expiré ou un contenu différent reçoit 409. Les erreurs de validation renvoient 422 avec `{ code, message, issues: [{ path, message }] }`.
+
+Un registre API respecte ce contrat strict :
+
+```yaml
+applications:
+  LEUL-WMS:
+    collections:
+      - LEUL-WMS
+      - LEUL-COMMUN
+    endpoint_acces:
+      - id: leulia-get-colis
+        description: >
+          Retrouver un colis à partir d’un numéro de commande,
+          d’un numéro de colis ou d’une autre référence logistique.
+      - id: leulia-get-preparation
+        description: >
+          Consulter les informations et l’état d’une préparation de commande.
+    tools:
+      - sql_inspection
+      - sql_executor
+```
+
+Chaque tool référencé doit exister dans `options.tools` de la configuration.
+Chaque entrée de `endpoint_acces` contient un identifiant unique dans l’application et une description libre. Les anciens registres contenant une simple liste de noms restent lisibles ; ils sont convertis vers cette structure lors de leur prochaine modification.
+À la création, l’identifiant est généré côté serveur depuis le nom de la première application : mise en minuscules et remplacement des espaces ou séparateurs par des underscores.
